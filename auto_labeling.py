@@ -20,6 +20,7 @@ class AutoLabeler:
     self.rawDataFileFullPath_list = [self.rawDataDirPath + '/' + file_name for file_name in self.rawDataFilePath_list]
 
     self.imagesDirPath = self.currentDirPath +"/kcyoon/images"
+    self.BBoxImagesDirPath = self.currentDirPath +"/kcyoon/bbox_images"
     self.labelsDirPath = self.currentDirPath +"/kcyoon/labels"
 
     self.dataCount = 0
@@ -28,7 +29,7 @@ class AutoLabeler:
     cv2.imshow('img', img)
     cv2.waitKey(0)
 
-  def calcBBox(self, img, criteria):
+  def calcBBox(self, img, criteria, imgCount):
     imgHeight_px, imgWidth_px = img.shape
 
     imgObject = np.where(img < criteria) # TODO: need to tune for stable functionality
@@ -38,8 +39,10 @@ class AutoLabeler:
     BBoxYMin_px = np.min(imgObject[0])
     BBoxYMax_px = np.max(imgObject[0])
 
-    # imgObjectBBox = cv2.rectangle(img, (BBoxXMin_px, BBoxYMin_px), (BBoxXMax_px, BBoxYMax_px), 100, 5)
+    imgObjectBBox = cv2.rectangle(img, (BBoxXMin_px, BBoxYMin_px), (BBoxXMax_px, BBoxYMax_px), 100, 5)
     # self.showImage(imgObjectBBox)
+    print("save bbox images")
+    self.saveBBoxImage(imgObjectBBox, imgCount)
 
     BBoxCenterX_px = (BBoxXMin_px + BBoxXMax_px) / 2
     BBoxCenterY_px = (BBoxYMin_px + BBoxYMax_px) / 2
@@ -47,6 +50,10 @@ class AutoLabeler:
     BBoxHeight_px = BBoxYMax_px - BBoxYMin_px
 
     return [BBoxCenterX_px/imgWidth_px, BBoxCenterY_px/imgHeight_px, BBoxWidth_px/imgWidth_px, BBoxHeight_px/imgHeight_px]
+
+  def saveBBoxImage(self, img, imgCount):
+    BBoximageFileFullPath = self.BBoxImagesDirPath + "/" + str(imgCount).zfill(12) + ".jpg"
+    cv2.imwrite(BBoximageFileFullPath, img)
 
   def saveImage(self, img, imgCount):
     imageFileFullPath = self.imagesDirPath + "/" + str(imgCount).zfill(12) + ".jpg"
@@ -70,7 +77,7 @@ class AutoLabeler:
       print("convert grayimages")
       img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
       print("calc BBox")
-      BBoxData = self.calcBBox(img_gray, 200)
+      BBoxData = self.calcBBox(img_gray, 200, self.dataCount)
       print("save images")
       self.saveImage(img_color, self.dataCount)
       print("save labels")
