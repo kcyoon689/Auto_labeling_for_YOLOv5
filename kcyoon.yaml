@@ -10,8 +10,8 @@
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
 path: ../datasets/kcyoon  # dataset root dir
-train: images/train2021  # train images (relative to 'path') --- images
-val: images/train2021  # val images (relative to 'path') --- images
+train: images  # train images (relative to 'path') --- images
+val: images  # val images (relative to 'path') --- images
 test:  # test images (optional)
 
 # Classes

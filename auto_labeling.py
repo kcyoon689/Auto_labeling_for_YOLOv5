@@ -14,52 +14,69 @@ signal.signal(signal.SIGINT,signal_handler)
 class AutoLabeler:
   def __init__(self):
     print("AutoLabeler init!")
-    self.currentDirPath = os.getcwd()
+    self.currentDirPath = os.getcwd() # /home/kcy/Auto_labeling_for_YOLOv5
     self.rawDataDirPath = self.currentDirPath + "/raw_data"
     self.rawDataFilePath_list = os.listdir(self.rawDataDirPath)
     self.rawDataFileFullPath_list = [self.rawDataDirPath + '/' + file_name for file_name in self.rawDataFilePath_list]
+
+    self.imagesDirPath = self.currentDirPath +"/kcyoon/images"
+    self.labelsDirPath = self.currentDirPath +"/kcyoon/labels"
+
+    self.dataCount = 0
 
   def showImage(self, img):
     cv2.imshow('img', img)
     cv2.waitKey(0)
 
-  def calcBBox(self, img):
-    imgObject = np.where(img < 200) # TODO: need to tune for stable functionality
-    print(imgObject)
-    print(imgObject[1])
-    BBoxXMin = np.min(imgObject[0]) # TODO: Check if this value is BBox X min or not
-    BBoxXMax = np.max(imgObject[0])
-    BBoxYMin = np.min(imgObject[1])
-    BBoxYMax = np.max(imgObject[1])
+  def calcBBox(self, img, criteria):
+    imgHeight_px, imgWidth_px = img.shape
 
-    print(BBoxXMin)
-    print(BBoxXMax)
-    print(BBoxYMin)
-    print(BBoxYMax)
+    imgObject = np.where(img < criteria) # TODO: need to tune for stable functionality
 
-    imgObjectBBox = cv2.rectangle(img, (BBoxYMin, BBoxXMin), (BBoxYMax, BBoxXMax), 100, 1) # TODO: Check cv2.rectangle get the corner position as [X,Y] order
-    self.showImage(imgObjectBBox)
+    BBoxXMin_px = np.min(imgObject[1])
+    BBoxXMax_px = np.max(imgObject[1])
+    BBoxYMin_px = np.min(imgObject[0])
+    BBoxYMax_px = np.max(imgObject[0])
 
-    return [1] # TODO: return bbox center X, Y, bbox width, height (scale is 0 ~ 1)
+    # imgObjectBBox = cv2.rectangle(img, (BBoxXMin_px, BBoxYMin_px), (BBoxXMax_px, BBoxYMax_px), 100, 5)
+    # self.showImage(imgObjectBBox)
 
-  def saveImage(self, img, path):
-    cv2.imwrite(path, img)
+    BBoxCenterX_px = (BBoxXMin_px + BBoxXMax_px) / 2
+    BBoxCenterY_px = (BBoxYMin_px + BBoxYMax_px) / 2
+    BBoxWidth_px = BBoxXMax_px - BBoxXMin_px
+    BBoxHeight_px = BBoxYMax_px - BBoxYMin_px
 
-  def saveLabel(self):
+    return [BBoxCenterX_px/imgWidth_px, BBoxCenterY_px/imgHeight_px, BBoxWidth_px/imgWidth_px, BBoxHeight_px/imgHeight_px]
+
+  def saveImage(self, img, imgCount):
+    imageFileFullPath = self.imagesDirPath + "/" + str(imgCount).zfill(12) + ".jpg"
+    cv2.imwrite(imageFileFullPath, img)
+
+  def saveLabel(self, classNumber, BBoxData, labelCount):
     # desired output
     # 58 [bbox center X] [bbox center Y] [bbox width] [bbox height]
+    # RAII Style Coding - keep away from user's mistakes
+    labelFileFullPath = self.labelsDirPath + "/" + str(labelCount).zfill(12) + ".txt"
+    strBBoxData = ""
+    for element in BBoxData:
+      strBBoxData += " " + str(element)
+    with open(labelFileFullPath, 'w') as labelFile:
+      labelFile.write(str(classNumber) + strBBoxData)
 
   def run(self):
-    print("load images")
-    img_color = cv2.imread(self.rawDataFileFullPath_list[0], cv2.IMREAD_COLOR)
-    print("convert grayimages")
-    img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
-    print("calc BBox")
-    label = self.calcBBox(img_gray)
-    print("save images")
-    self.saveImage(img_color, path)
-    print("save labels")
-    self.saveLabel()
+    for rawDataPath in self.rawDataFileFullPath_list:
+      print("load images")
+      img_color = cv2.imread(rawDataPath, cv2.IMREAD_COLOR)
+      print("convert grayimages")
+      img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
+      print("calc BBox")
+      BBoxData = self.calcBBox(img_gray, 200)
+      print("save images")
+      self.saveImage(img_color, self.dataCount)
+      print("save labels")
+      self.saveLabel(58, BBoxData, self.dataCount)
+      print("{} data done!\n".format(self.dataCount))
+      self.dataCount += 1
 
 if __name__ == "__main__":
   autoLabeler = AutoLabeler()
