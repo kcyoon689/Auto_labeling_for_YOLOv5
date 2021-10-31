@@ -81,7 +81,7 @@ class AutoLabeler:
       print("save images")
       self.saveImage(img_color, self.dataCount)
       print("save labels")
-      self.saveLabel(58, BBoxData, self.dataCount)
+      self.saveLabel(56, BBoxData, self.dataCount)
       print("{} data done!\n".format(self.dataCount))
       self.dataCount += 1
 
